@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"path"
 	"path/filepath"
 	"sync"
 )
@@ -51,6 +52,8 @@ type TemplateSet struct {
 	// Template cache (for FromCache())
 	templateCache      map[string]*Template
 	templateCacheMutex sync.Mutex
+
+	SearchDirectories []string
 }
 
 // Create your own template sets to separate different kind of templates (e. g. web from mail templates) with
@@ -249,6 +252,17 @@ func (set *TemplateSet) resolveFilename(tpl *Template, filename string) (resolve
 			set.logf("Access attempt outside of the sandbox directories (blocked): '%s'", resolvedPath)
 			resolvedPath = ""
 		}()
+	}
+
+	if len(set.SearchDirectories) > 0 {
+		// find the template in config dirs
+		for _, baseDir := range set.SearchDirectories {
+			testPath := path.Join(baseDir, filename)
+			fmt.Println("baseDir:", baseDir, "filename:", filename)
+			if _, err := os.Stat(testPath); err == nil {
+				return testPath
+			}
+		}
 	}
 
 	if filepath.IsAbs(filename) {
