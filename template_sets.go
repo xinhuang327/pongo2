@@ -258,7 +258,7 @@ func (set *TemplateSet) resolveFilename(tpl *Template, filename string) (resolve
 		// find the template in config dirs
 		for _, baseDir := range set.SearchDirectories {
 			testPath := path.Join(baseDir, filename)
-			fmt.Println("baseDir:", baseDir, "filename:", filename)
+			// fmt.Println("baseDir:", baseDir, "filename:", filename)
 			if _, err := os.Stat(testPath); err == nil {
 				return testPath
 			}
