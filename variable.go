@@ -261,7 +261,11 @@ func (vr *variableResolver) resolve(ctx *ExecutionContext) (*Value, error) {
 					// * slices/arrays/strings
 					switch current.Kind() {
 					case reflect.String, reflect.Array, reflect.Slice:
-						current = current.Index(part.i)
+						if current.Len() > part.i {
+							current = current.Index(part.i)
+						} else {
+							return nil, fmt.Errorf("Index out of range: %d (variable %s)", part.i, vr.String())
+						}
 					default:
 						return nil, fmt.Errorf("Can't access an index on type %s (variable %s)",
 							current.Kind().String(), vr.String())
@@ -374,6 +378,13 @@ func (vr *variableResolver) resolve(ctx *ExecutionContext) (*Value, error) {
 				}
 			}
 
+			// Check if any of the values are invalid
+			for _, p := range parameters {
+				if p.Kind() == reflect.Invalid {
+					return nil, fmt.Errorf("Calling a function using an invalid parameter")
+				}
+			}
+
 			// Call it and get first return parameter back
 			rv := current.Call(parameters)[0]
 
@@ -385,11 +396,11 @@ func (vr *variableResolver) resolve(ctx *ExecutionContext) (*Value, error) {
 				isSafe = rv.Interface().(*Value).safe
 			}
 		}
-	}
 
-	if !current.IsValid() {
-		// Value is not valid (e. g. NIL value)
-		return AsValue(nil), nil
+		if !current.IsValid() {
+			// Value is not valid (e. g. NIL value)
+			return AsValue(nil), nil
+		}
 	}
 
 	return &Value{val: current, safe: isSafe}, nil
